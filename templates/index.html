@@ -1,0 +1,681 @@
+
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Meu Orçamento Inteligente | UniCV</title>
+
+    <style>
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            background: #f1f5f9;
+            color: #172554;
+            font-family: Arial, sans-serif;
+        }
+
+        main {
+            width: min(960px, 100%);
+            padding: 24px 16px 60px;
+            margin: auto;
+        }
+
+        h1 { margin-bottom: 6px; }
+        h2 { margin-top: 0; }
+        p { line-height: 1.5; }
+
+        .muted { color: #64748b; }
+        .topo {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .cartao {
+            background: white;
+            border-radius: 15px;
+            padding: 22px;
+            margin: 18px 0;
+            box-shadow: 0 3px 16px #0f172a0d;
+        }
+
+        .grade {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+
+        .indicador {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 17px;
+        }
+
+        .indicador strong {
+            display: block;
+            margin-top: 10px;
+            font-size: 24px;
+            overflow-wrap: anywhere;
+        }
+
+        .verde { color: #15803d; }
+        .vermelho { color: #b91c1c; }
+
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 7px;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 15px;
+            border: 1px solid #cbd5e1;
+            border-radius: 9px;
+            font: inherit;
+            background: white;
+        }
+
+        button {
+            border: 0;
+            border-radius: 9px;
+            background: #2563eb;
+            color: white;
+            padding: 12px 17px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        button.secundario {
+            background: #e2e8f0;
+            color: #334155;
+        }
+
+        button.apagar {
+            background: #fee2e2;
+            color: #991b1b;
+            padding: 7px 10px;
+        }
+
+        .campos {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .barra-fundo {
+            height: 13px;
+            background: #e2e8f0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 6px;
+        }
+
+        .barra {
+            height: 100%;
+            background: #2563eb;
+            border-radius: 10px;
+        }
+
+        .linha {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin: 14px 0 5px;
+        }
+
+        .registro {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 13px 0;
+        }
+
+        .registro:last-child { border-bottom: 0; }
+
+        .registro small {
+            color: #64748b;
+            display: block;
+            margin-top: 5px;
+        }
+
+        .registro-direita {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .aviso {
+            background: #eff6ff;
+            border-left: 4px solid #2563eb;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 12px 0;
+            line-height: 1.5;
+        }
+
+        .login {
+            max-width: 440px;
+            margin: 75px auto;
+        }
+
+        .erro { color: #b91c1c; }
+
+        @media (max-width: 650px) {
+            .grade, .campos { grid-template-columns: 1fr; }
+            .cartao { padding: 18px; }
+            .indicador strong { font-size: 23px; }
+        }
+    </style>
+</head>
+
+<body>
+<main>
+    {% if not autenticado %}
+        <section class="cartao login">
+            <h1>💰 Meu Orçamento Inteligente</h1>
+            <p class="muted">
+                Educação Financeira na Prática — UniCV
+            </p>
+
+            <h2>Acesso à atividade</h2>
+
+            {% for mensagem in get_flashed_messages() %}
+                <p class="erro">{{ mensagem }}</p>
+            {% endfor %}
+
+            <form method="POST" action="/entrar">
+                <label>Senha da demonstração</label>
+                <input type="password" name="senha" required>
+                <button type="submit">Entrar no aplicativo</button>
+            </form>
+
+            <p class="muted">
+                Use somente informações fictícias.
+                Este é um aplicativo educativo.
+            </p>
+        </section>
+
+    {% else %}
+        <header class="topo">
+            <div>
+                <h1>💰 Meu Orçamento Inteligente</h1>
+                <p class="muted">
+                    Organize seu dinheiro e aprenda a planejar.
+                </p>
+            </div>
+
+            <form method="POST" action="/sair">
+                <button class="secundario">Sair</button>
+            </form>
+        </header>
+
+        <section class="cartao">
+            <h2>1. Seu resumo financeiro</h2>
+
+            <div class="grade">
+                <div class="indicador">
+                    <span>Receitas</span>
+                    <strong class="verde" id="receitas">R$ 0,00</strong>
+                </div>
+
+                <div class="indicador">
+                    <span>Despesas</span>
+                    <strong class="vermelho" id="despesas">R$ 0,00</strong>
+                </div>
+
+                <div class="indicador">
+                    <span>Saldo disponível</span>
+                    <strong id="saldo">R$ 0,00</strong>
+                </div>
+            </div>
+
+            <div id="mensagem-saldo" class="aviso"></div>
+        </section>
+
+        <section class="cartao">
+            <h2>2. Adicione receitas e despesas</h2>
+
+            <form id="form-lancamento">
+                <div class="campos">
+                    <div>
+                        <label>Tipo</label>
+                        <select id="tipo" required>
+                            <option value="receita">Receita</option>
+                            <option value="despesa">Despesa</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label>Categoria</label>
+                        <select id="categoria" required></select>
+                    </div>
+
+                    <div>
+                        <label>Descrição</label>
+                        <input id="descricao" maxlength="60"
+                               placeholder="Ex.: Supermercado" required>
+                    </div>
+
+                    <div>
+                        <label>Valor (R$)</label>
+                        <input id="valor" type="number"
+                               min="0.01" step="0.01"
+                               placeholder="Ex.: 150,00" required>
+                    </div>
+                </div>
+
+                <button type="submit">Adicionar lançamento</button>
+            </form>
+        </section>
+
+        <section class="cartao">
+            <h2>3. Para onde vai seu dinheiro?</h2>
+            <p class="muted">
+                Distribuição das despesas por categoria.
+            </p>
+
+            <div id="grafico"></div>
+        </section>
+
+        <section class="cartao">
+            <h2>4. Seus lançamentos</h2>
+            <div id="lista"></div>
+
+            <button class="secundario" type="button"
+                    id="exemplo">
+                Carregar exemplo educativo
+            </button>
+
+            <button class="apagar" type="button"
+                    id="limpar">
+                Limpar meus dados
+            </button>
+        </section>
+
+        <section class="cartao">
+            <h2>5. Aprenda com seu orçamento</h2>
+            <div id="dicas"></div>
+        </section>
+
+        <section class="cartao">
+            <h2>6. Inteligência artificial como apoio</h2>
+            <p>
+                A IA pode ajudar a refletir sobre seus gastos,
+                mas não substitui suas próprias decisões.
+            </p>
+
+            <div class="aviso" id="prompt"></div>
+
+            <button type="button" id="copiar">
+                Copiar pergunta para a IA
+            </button>
+
+            <p class="muted">
+                Não envie nomes completos, senhas, dados bancários
+                ou outras informações pessoais para ferramentas de IA.
+            </p>
+        </section>
+
+        <footer class="muted">
+            <p>
+                Projeto de extensão UniCV — Educação Financeira
+                na Prática: Organização do Orçamento Pessoal
+                com Apoio da Inteligência Artificial.
+            </p>
+            <p>
+                Ferramenta demonstrativa. Não oferece
+                aconselhamento financeiro individual.
+            </p>
+        </footer>
+
+        <script>
+            const CHAVE = "unicv_orcamento_demo_v1";
+
+            const categorias = {
+                receita: ["Salário", "Trabalho extra", "Outras receitas"],
+                despesa: [
+                    "Moradia", "Alimentação", "Transporte",
+                    "Saúde", "Educação", "Lazer", "Outros"
+                ]
+            };
+
+            const dinheiro = valor =>
+                Number(valor).toLocaleString("pt-BR", {
+                    style: "currency",
+                    currency: "BRL"
+                });
+
+            let lancamentos = [];
+
+            try {
+                const salvo = JSON.parse(
+                    localStorage.getItem(CHAVE) || "[]"
+                );
+                lancamentos = Array.isArray(salvo) ? salvo : [];
+            } catch {
+                lancamentos = [];
+            }
+
+            const campoTipo = document.getElementById("tipo");
+            const campoCategoria = document.getElementById("categoria");
+
+            function atualizarCategorias() {
+                campoCategoria.replaceChildren();
+
+                categorias[campoTipo.value].forEach(nome => {
+                    const opcao = document.createElement("option");
+                    opcao.value = nome;
+                    opcao.textContent = nome;
+                    campoCategoria.appendChild(opcao);
+                });
+            }
+
+            campoTipo.addEventListener("change", atualizarCategorias);
+            atualizarCategorias();
+
+            function totais() {
+                const receitas = lancamentos
+                    .filter(item => item.tipo === "receita")
+                    .reduce((soma, item) => soma + item.valor, 0);
+
+                const despesas = lancamentos
+                    .filter(item => item.tipo === "despesa")
+                    .reduce((soma, item) => soma + item.valor, 0);
+
+                return {
+                    receitas,
+                    despesas,
+                    saldo: receitas - despesas
+                };
+            }
+
+            function gerarPrompt() {
+                const t = totais();
+                const gastos = {};
+
+                lancamentos
+                    .filter(item => item.tipo === "despesa")
+                    .forEach(item => {
+                        gastos[item.categoria] =
+                            (gastos[item.categoria] || 0) + item.valor;
+                    });
+
+                const detalhes = Object.entries(gastos)
+                    .map(([nome, valor]) =>
+                        `${nome}: ${dinheiro(valor)}`
+                    ).join("; ") || "Nenhuma despesa registrada";
+
+                return (
+                    "Estou aprendendo educação financeira e estou " +
+                    "utilizando valores fictícios. Meu orçamento tem " +
+                    `receitas de ${dinheiro(t.receitas)}, ` +
+                    `despesas de ${dinheiro(t.despesas)} e ` +
+                    `saldo de ${dinheiro(t.saldo)}. ` +
+                    `Minhas categorias de gastos são: ${detalhes}. ` +
+                    "Explique de forma simples como posso organizar " +
+                    "melhor esse orçamento, distinguir necessidades " +
+                    "de desejos e criar uma pequena reserva. " +
+                    "Não indique investimentos ou produtos financeiros."
+                );
+            }
+
+            function desenhar() {
+                const t = totais();
+
+                document.getElementById("receitas").textContent =
+                    dinheiro(t.receitas);
+                document.getElementById("despesas").textContent =
+                    dinheiro(t.despesas);
+
+                const saldo = document.getElementById("saldo");
+                saldo.textContent = dinheiro(t.saldo);
+                saldo.className = t.saldo < 0 ? "vermelho" : "verde";
+
+                const aviso = document.getElementById("mensagem-saldo");
+
+                if (lancamentos.length === 0) {
+                    aviso.textContent =
+                        "Comece cadastrando uma receita ou despesa.";
+                } else if (t.saldo < 0) {
+                    aviso.textContent =
+                        "Atenção: suas despesas ultrapassaram as " +
+                        "receitas. Reveja os gastos e estabeleça prioridades.";
+                } else if (t.saldo === 0) {
+                    aviso.textContent =
+                        "Seu saldo está zerado. Planeje uma margem " +
+                        "para imprevistos.";
+                } else {
+                    aviso.textContent =
+                        "Seu orçamento apresenta saldo positivo. " +
+                        "Considere reservar parte para imprevistos.";
+                }
+
+                // Grafico em barras com HTML e CSS
+                const gastos = {};
+
+                lancamentos
+                    .filter(item => item.tipo === "despesa")
+                    .forEach(item => {
+                        gastos[item.categoria] =
+                            (gastos[item.categoria] || 0) + item.valor;
+                    });
+
+                const grafico = document.getElementById("grafico");
+                grafico.replaceChildren();
+
+                const entradas = Object.entries(gastos)
+                    .sort((a, b) => b[1] - a[1]);
+
+                if (entradas.length === 0) {
+                    const vazio = document.createElement("p");
+                    vazio.textContent = "Cadastre despesas para ver o gráfico.";
+                    grafico.appendChild(vazio);
+                }
+
+                entradas.forEach(([categoria, valor]) => {
+                    const grupo = document.createElement("div");
+                    const linha = document.createElement("div");
+                    linha.className = "linha";
+
+                    const nome = document.createElement("span");
+                    nome.textContent = categoria;
+
+                    const numero = document.createElement("strong");
+                    numero.textContent = dinheiro(valor);
+
+                    linha.append(nome, numero);
+
+                    const fundo = document.createElement("div");
+                    fundo.className = "barra-fundo";
+
+                    const barra = document.createElement("div");
+                    barra.className = "barra";
+                    barra.style.width =
+                        `${t.despesas ? valor / t.despesas * 100 : 0}%`;
+
+                    fundo.appendChild(barra);
+                    grupo.append(linha, fundo);
+                    grafico.appendChild(grupo);
+                });
+
+                // Lista de lancamentos
+                const lista = document.getElementById("lista");
+                lista.replaceChildren();
+
+                if (lancamentos.length === 0) {
+                    const vazio = document.createElement("p");
+                    vazio.textContent = "Nenhum lançamento cadastrado.";
+                    lista.appendChild(vazio);
+                }
+
+                lancamentos.forEach(item => {
+                    const linha = document.createElement("div");
+                    linha.className = "registro";
+
+                    const info = document.createElement("div");
+
+                    const titulo = document.createElement("strong");
+                    titulo.textContent = item.descricao;
+
+                    const detalhe = document.createElement("small");
+                    detalhe.textContent = item.categoria;
+
+                    info.append(titulo, detalhe);
+
+                    const direita = document.createElement("div");
+                    direita.className = "registro-direita";
+
+                    const valor = document.createElement("strong");
+                    valor.textContent =
+                        (item.tipo === "despesa" ? "- " : "+ ") +
+                        dinheiro(item.valor);
+                    valor.className =
+                        item.tipo === "despesa" ? "vermelho" : "verde";
+
+                    const apagar = document.createElement("button");
+                    apagar.className = "apagar";
+                    apagar.type = "button";
+                    apagar.textContent = "Excluir";
+                    apagar.addEventListener("click", () => {
+                        lancamentos = lancamentos.filter(
+                            registro => registro.id !== item.id
+                        );
+                        salvar();
+                    });
+
+                    direita.append(valor, apagar);
+                    linha.append(info, direita);
+                    lista.appendChild(linha);
+                });
+
+                // Dicas educativas
+                const dicas = document.getElementById("dicas");
+                dicas.replaceChildren();
+
+                const mensagens = [
+                    "Anote seus ganhos e gastos para conhecer seus hábitos.",
+                    "Separe despesas necessárias de gastos que podem ser adiados."
+                ];
+
+                if (t.receitas > 0 && t.despesas > t.receitas * 0.8) {
+                    mensagens.push(
+                        "Mais de 80% das receitas estão comprometidas " +
+                        "com despesas. Avalie seu orçamento com atenção."
+                    );
+                }
+
+                if (t.saldo > 0) {
+                    mensagens.push(
+                        "Planeje uma reserva para despesas inesperadas."
+                    );
+                }
+
+                mensagens.forEach(texto => {
+                    const p = document.createElement("p");
+                    p.className = "aviso";
+                    p.textContent = texto;
+                    dicas.appendChild(p);
+                });
+
+                document.getElementById("prompt").textContent =
+                    gerarPrompt();
+            }
+
+            function salvar() {
+                try {
+                    localStorage.setItem(CHAVE, JSON.stringify(lancamentos));
+                } catch {
+                    alert("Não foi possível salvar os dados neste navegador.");
+                }
+                desenhar();
+            }
+
+            document.getElementById("form-lancamento")
+                .addEventListener("submit", evento => {
+                    evento.preventDefault();
+
+                    const valor = Number(
+                        document.getElementById("valor").value
+                    );
+
+                    if (!Number.isFinite(valor) || valor <= 0) {
+                        alert("Digite um valor maior que zero.");
+                        return;
+                    }
+
+                    lancamentos.push({
+                        id: Date.now() + Math.random(),
+                        tipo: campoTipo.value,
+                        categoria: campoCategoria.value,
+                        descricao: document
+                            .getElementById("descricao").value.trim(),
+                        valor: Math.round(valor * 100) / 100
+                    });
+
+                    salvar();
+                    evento.target.reset();
+                    atualizarCategorias();
+                });
+
+            document.getElementById("exemplo")
+                .addEventListener("click", () => {
+                    if (lancamentos.length &&
+                        !confirm("Substituir os lançamentos atuais?")) {
+                        return;
+                    }
+
+                    const exemplo = [
+                        ["receita", "Salário", "Salário fictício", 2000],
+                        ["despesa", "Moradia", "Aluguel", 600],
+                        ["despesa", "Alimentação", "Supermercado", 400],
+                        ["despesa", "Transporte", "Transporte", 200],
+                        ["despesa", "Lazer", "Lazer", 150]
+                    ];
+
+                    lancamentos = exemplo.map((item, indice) => ({
+                        id: Date.now() + indice,
+                        tipo: item[0],
+                        categoria: item[1],
+                        descricao: item[2],
+                        valor: item[3]
+                    }));
+
+                    salvar();
+                });
+
+            document.getElementById("limpar")
+                .addEventListener("click", () => {
+                    if (confirm("Apagar todos os lançamentos deste celular?")) {
+                        lancamentos = [];
+                        salvar();
+                    }
+                });
+
+            document.getElementById("copiar")
+                .addEventListener("click", async () => {
+                    const texto = gerarPrompt();
+
+                    try {
+                        await navigator.clipboard.writeText(texto);
+                        alert("Pergunta copiada! Cole no ChatGPT.");
+                    } catch {
+                        window.prompt("Copie este texto:", texto);
+                    }
+                });
+
+            desenhar();
+        </script>
+    {% endif %}
+</main>
+</body>
+</html>
